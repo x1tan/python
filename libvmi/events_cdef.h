@@ -122,6 +122,13 @@ typedef struct desriptor_event {
     ...;
 } descriptor_event_t;
 
+typedef struct emul_insn {
+    /* Tell LibVMI if it's not safe to free this structure once processed */
+    uint8_t dont_free;
+    uint8_t _pad[7];
+    uint8_t data[16];
+} emul_insn_t;
+
 // vmi_event_t
 struct vmi_event;
 typedef struct vmi_event vmi_event_t;
@@ -170,6 +177,7 @@ struct vmi_event {
             x86_registers_t *x86_regs;
             arm_registers_t *arm_regs;
         };
+        emul_insn_t *emul_insn;
         ...;
     };
 };

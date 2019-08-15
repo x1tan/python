@@ -84,6 +84,7 @@ class Event(object):
     def __init__(self, callback, slat_id=0, data=None):
         self.slat_id = slat_id
         self.data = data
+        self._emulate_instruction = None
         self._py_callback = callback
         self._vmi = None
         self.generic_data = {
@@ -111,6 +112,15 @@ class Event(object):
     @property
     def cffi_event(self):
         return self._cffi_event
+
+    @property
+    def emulate_instruction(self):
+        return self._emulate_instruction
+
+    @emulate_instruction.setter
+    def emulate_instruction(self, instruction):
+        self._emulate_instruction = instruction
+        self._cffi_event.emul_insn = ffi.new('emul_insn_t *', {'dont_free': 1, 'data': instruction})
 
     def to_cffi(self):
         self._cffi_event.version = self.version
