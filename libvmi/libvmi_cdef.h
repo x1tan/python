@@ -366,7 +366,7 @@ status_t vmi_destroy(
 
 vmi_arch_t vmi_get_library_arch();
 
-const char *vmi_get_rekall_path(
+const char *vmi_get_os_profile_path(
     vmi_instance_t vmi);
 
 // memory translations

@@ -341,8 +341,8 @@ class Libvmi(object):
         arch = lib.vmi_get_library_arch()
         return VMIArch(arch)
 
-    def get_rekall_path(self):
-        value = lib.vmi_get_rekall_path(self.vmi)
+    def get_os_profile_path(self):
+        value = lib.vmi_get_os_profile_path(self.vmi)
         if value == ffi.NULL:
             return None
         return ffi.string(value).decode()
