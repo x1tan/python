@@ -6,7 +6,6 @@ import os
 import pkgconfig
 from cffi import FFI
 
-
 # glib_cdef.h must be first
 CDEF_HEADERS = [
     'glib_cdef.h',
@@ -51,6 +50,7 @@ def check_header(header):
         if os.path.exists(inc_path + '/' + header):
             return True
     return False
+
 
 # glib cflags and libs
 glib_includes = get_cflags('glib-2.0')

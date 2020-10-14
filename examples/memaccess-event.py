@@ -12,7 +12,6 @@ Options:
 
 import sys
 import signal
-from pprint import pprint
 
 from docopt import docopt
 from libvmi import Libvmi, INIT_DOMAINNAME, INIT_EVENTS
@@ -53,7 +52,7 @@ def cb_mem_event(vmi, event):
 
 def cb_ss_event(vmi, event):
     # out of the frame ?
-    if event.cffi_event.ss_event.gfn != event.data['target_gfn']:
+    if event.cffi_event.ss_event._gfn != event.data['target_gfn']:
         print("reregister event")
         # reregister mem event
         vmi.register_event(event.data['mem_event'])

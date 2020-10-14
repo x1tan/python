@@ -1,4 +1,4 @@
-#define VMI_EVENTS_VERSION 0x00000006
+#define VMI_EVENTS_VERSION 0x00000007
 
 typedef uint16_t vmi_event_type_t;
 
@@ -193,6 +193,12 @@ status_t vmi_events_listen(
 
 int vmi_are_events_pending(
     vmi_instance_t vmi);
+
+status_t vmi_toggle_single_step_vcpu(
+    vmi_instance_t vmi,
+    vmi_event_t* event,
+    uint32_t vcpu,
+    bool enabled);
 
 status_t vmi_clear_event(
     vmi_instance_t vmi,

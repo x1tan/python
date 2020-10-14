@@ -1,8 +1,8 @@
-from future.utils import raise_from
 from builtins import bytes, object, str
 from enum import Enum
 
 from _libvmi import ffi, lib
+from future.utils import raise_from
 
 # export libvmi defines
 INIT_DOMAINNAME = lib.VMI_INIT_DOMAINNAME
@@ -45,6 +45,51 @@ class X86Reg(Enum):
     DR3 = lib.DR3
     DR6 = lib.DR6
     DR7 = lib.DR7
+
+
+class MSR(Enum):
+    ANY = lib.MSR_ANY
+    ALL = lib.MSR_ALL
+    FLAGS = lib.MSR_FLAGS
+    LSTAR = lib.MSR_LSTAR
+    CSTAR = lib.MSR_CSTAR
+    SYSCALL_MASK = lib.MSR_SYSCALL_MASK
+    EFER = lib.MSR_EFER
+    TSC_AUX = lib.MSR_TSC_AUX
+    STAR = lib.MSR_STAR
+    SHADOW_GS_BASE = lib.MSR_SHADOW_GS_BASE
+    MTRRfix64K_00000 = lib.MSR_MTRRfix64K_00000
+    MTRRfix16K_80000 = lib.MSR_MTRRfix16K_80000
+    MTRRfix16K_A0000 = lib.MSR_MTRRfix16K_A0000
+    MTRRfix4K_C0000 = lib.MSR_MTRRfix4K_C0000
+    MTRRfix4K_C8000 = lib.MSR_MTRRfix4K_C8000
+    MTRRfix4K_D0000 = lib.MSR_MTRRfix4K_D0000
+    MTRRfix4K_D8000 = lib.MSR_MTRRfix4K_D8000
+    MTRRfix4K_E0000 = lib.MSR_MTRRfix4K_E0000
+    MTRRfix4K_E8000 = lib.MSR_MTRRfix4K_E8000
+    MTRRfix4K_F0000 = lib.MSR_MTRRfix4K_E8000
+    MTRRfix4K_F8000 = lib.MSR_MTRRfix4K_F8000
+    MTRRdefType = lib.MSR_MTRRdefType
+    IA32_MC0_CTL = lib.MSR_IA32_MC0_CTL
+    IA32_MC0_STATUS = lib.MSR_IA32_MC0_STATUS
+    IA32_MC0_ADDR = lib.MSR_IA32_MC0_ADDR
+    IA32_MC0_MISC = lib.MSR_IA32_MC0_MISC
+    IA32_MC1_CTL = lib.MSR_IA32_MC1_CTL
+    IA32_MC0_CTL2 = lib.MSR_IA32_MC0_CTL2
+    AMD_PATCHLEVEL = lib.MSR_AMD_PATCHLEVEL
+    AMD64_TSC_RATIO = lib.MSR_AMD64_TSC_RATIO
+    IA32_P5_MC_ADDR = lib.MSR_IA32_P5_MC_ADDR
+    IA32_P5_MC_TYPE = lib.MSR_IA32_P5_MC_TYPE
+    IA32_TSC = lib.MSR_IA32_TSC
+    IA32_PLATFORM_ID = lib.MSR_IA32_PLATFORM_ID
+    IA32_EBL_CR_POWERON = lib.MSR_IA32_EBL_CR_POWERON
+    IA32_EBC_FREQUENCY_ID = lib.MSR_IA32_EBC_FREQUENCY_ID
+    IA32_FEATURE_CONTROL = lib.MSR_IA32_FEATURE_CONTROL
+    IA32_SYSENTER_CS = lib.MSR_IA32_SYSENTER_CS
+    IA32_SYSENTER_ESP = lib.MSR_IA32_SYSENTER_ESP
+    IA32_SYSENTER_EIP = lib.MSR_IA32_SYSENTER_EIP
+    IA32_MISC_ENABLE = lib.MSR_IA32_MISC_ENABLE
+    HYPERVISOR = lib.MSR_HYPERVISOR
 
 
 class Registers:
@@ -168,6 +213,12 @@ class TranslateMechanism(Enum):
     KERNEL_SYMBOL = lib.VMI_TM_KERNEL_SYMBOL
 
 
+class VMIInitData(Enum):
+    XEN_EVTCHN = lib.VMI_INIT_DATA_XEN_EVTCHN
+    MEMMAP = lib.VMI_INIT_DATA_MEMMAP
+    KVMI_SOCKET = lib.VMI_INIT_DATA_KVMI_SOCKET
+
+
 class AccessContext(object):
 
     def __init__(self, tr_mechanism=TranslateMechanism.NONE, addr=0,
@@ -217,7 +268,7 @@ class Libvmi(object):
         'vmi',
     )
 
-    def __init__(self, domain, init_flags=INIT_DOMAINNAME, init_data=ffi.NULL,
+    def __init__(self, domain, init_flags=INIT_DOMAINNAME, init_data=None,
                  config_mode=VMIConfig.GLOBAL_FILE_ENTRY, config=ffi.NULL,
                  mode=None, partial=False):
         self.vmi = ffi.NULL
@@ -226,11 +277,27 @@ class Libvmi(object):
         # avoid GC to free ghashtable inserted values
         ghash_ref = dict()
         ghash = None
+        # keep references on ffi buffers, avoid issues with GC
+        ffi_refs = {
+            'init_data': []
+        }
+        init_data_ffi = ffi.NULL
+        if init_data:
+            init_data_ffi = ffi.new("vmi_init_data_t *", {"entry": len(init_data)})
+            init_data_ffi.count = len(init_data)
+            for i, (e_type, e_value) in enumerate(init_data.items()):
+                init_data_ffi.entry[i].type = e_type.value
+                if not isinstance(e_value, str):
+                    raise RuntimeError("Passing anything else than a string as init_data value is not implemented")
+                ref = e_value.encode()
+                init_data_ffi.entry[i].data = ffi.from_buffer(ref)
+                # keep a ref !
+                ffi_refs['init_data'].append(ref)
         if partial:
             # vmi_init
             if not mode:
                 # calling vmi_get_access_mode to auto determine vmi_mode
-                mode = self.get_access_mode(domain, init_flags, init_data)
+                mode = self.get_access_mode(domain, init_flags, init_data_ffi)
             if not isinstance(mode, VMIMode):
                 raise RuntimeError("mode is not an instance of VMIMode")
             if (not init_flags & INIT_DOMAINNAME and
@@ -243,7 +310,7 @@ class Libvmi(object):
                                   mode.value,
                                   domain,
                                   init_flags,
-                                  init_data,
+                                  init_data_ffi,
                                   init_error)
         else:
             # vmi_init_complete
@@ -280,7 +347,7 @@ class Libvmi(object):
             status = lib.vmi_init_complete(self.opaque_vmi,
                                            domain,
                                            init_flags,
-                                           init_data,
+                                           init_data_ffi,
                                            config_mode.value,
                                            config,
                                            init_error)
@@ -907,6 +974,11 @@ class Libvmi(object):
     def are_events_pending(self):
         events_pending = lib.vmi_are_events_pending(self.vmi)
         return events_pending
+
+    def toggle_single_step_vcpu(self, event, vcpu, enabled):
+        cffi_event = event.to_cffi()
+        status = lib.vmi_toggle_single_step_vcpu(self.vmi, cffi_event, vcpu, enabled)
+        check(status)
 
     # extra
     def get_va_pages(self, dtb):
