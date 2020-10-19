@@ -137,7 +137,8 @@ class Event(object):
     @emulate_read_data.setter
     def emulate_read_data(self, data):
         self._emulate_read_data = data
-        self._cffi_event.emul_read = ffi.new('emul_read_t *', {'dont_free': 1, 'data': self._emulate_read_data})
+        self._cffi_event.emul_read = ffi.new('emul_read_t *', {'dont_free': 1, 'data': self._emulate_read_data,
+                                                               'size': len(self._emulate_read_data)})
 
     def to_cffi(self):
         self._cffi_event.version = self.version
