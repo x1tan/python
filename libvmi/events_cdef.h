@@ -186,6 +186,7 @@ struct vmi_event {
             arm_registers_t *arm_regs;
         };
         emul_insn_t *emul_insn;
+        emul_read_t *emul_read;
         ...;
     };
 };
