@@ -1,6 +1,6 @@
 import ctypes
 from builtins import object, super
-from enum import Enum
+from enum import IntFlag, Enum
 
 from _libvmi import ffi, lib
 
@@ -20,7 +20,7 @@ class EventType(Enum):
     DESCRIPTOR_ACCESS = lib.VMI_EVENT_DESCRIPTOR_ACCESS
 
 
-class EventResponse(Enum):
+class EventResponse(IntFlag):
     NONE = lib.VMI_EVENT_RESPONSE_NONE
     EMULATE = lib.VMI_EVENT_RESPONSE_EMULATE
     EMULATE_NOWRITE = lib.VMI_EVENT_RESPONSE_EMULATE_NOWRITE
