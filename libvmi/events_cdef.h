@@ -129,6 +129,14 @@ typedef struct emul_insn {
     uint8_t data[16];
 } emul_insn_t;
 
+typedef struct emul_read {
+    uint32_t size;
+    /* Tell LibVMI if it's not safe to free this structure once processed */
+    uint8_t dont_free;
+    uint8_t _pad[3];
+    uint8_t data[256];
+} emul_read_t;
+
 // vmi_event_t
 struct vmi_event;
 typedef struct vmi_event vmi_event_t;
