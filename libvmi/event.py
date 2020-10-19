@@ -84,6 +84,7 @@ class Event(object):
         self.slat_id = slat_id
         self.data = data
         self._emulate_instruction = None
+        self._emulate_read_data = None
         self._py_callback = callback
         self._vmi = None
         self.generic_data = {
@@ -127,7 +128,14 @@ class Event(object):
     @emulate_instruction.setter
     def emulate_instruction(self, instruction):
         self._emulate_instruction = instruction
-        self._cffi_event.emul_insn = ffi.new('emul_insn_t *', {'dont_free': 1, 'data': instruction})
+
+    @property
+    def emulate_read_data(self):
+        return self._emulate_read_data
+
+    @emulate_read_data.setter
+    def emulate_read_data(self, data):
+        self._emulate_read_data = data
 
     def to_cffi(self):
         self._cffi_event.version = self.version
@@ -139,6 +147,8 @@ class Event(object):
         # assign the handle to the event data
         self._cffi_event.data = self.generic_handle
         self._cffi_event.callback = lib.generic_event_callback
+        self._cffi_event.emul_insn = ffi.new('emul_insn_t *', {'dont_free': 1, 'data': self._emulate_instruction})
+        self._cffi_event.emul_read = ffi.new('emul_read_t *', {'dont_free': 1, 'data': self._emulate_read_data})
 
     def to_dict(self):
         return {
